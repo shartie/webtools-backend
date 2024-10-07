@@ -1,11 +1,14 @@
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import func
 from web_tools.core import database_session  # Import your session creator
-from web_tools.models import UserDB, FAQSectionDB, FAQItemDB  # Replace with the actual path to your models
+from web_tools.models import (
+    UserDB,
+    FAQSectionDB,
+    FAQItemDB,
+)  # Replace with the actual path to your models
 from sqlalchemy.exc import NoResultFound
+
 
 # Function to get the user by email
 async def get_user_by_email(session: AsyncSession, email: str) -> UserDB:
@@ -15,6 +18,7 @@ async def get_user_by_email(session: AsyncSession, email: str) -> UserDB:
         return user
     except NoResultFound:
         raise ValueError(f"User with email {email} does not exist.")
+
 
 # Function to populate the database with synthetic FAQs for a specific user
 async def insert_synthetic_faqs_for_user(email: str):
@@ -27,19 +31,19 @@ async def insert_synthetic_faqs_for_user(email: str):
             faq_section1 = FAQSectionDB(
                 title="Synthetic General Questions 1",
                 description="Synthetic frequently asked questions about general topics.",
-                user=user
+                user=user,
             )
 
             faq_section2 = FAQSectionDB(
                 title="Synthetic Technical Support 2",
                 description="Synthetic questions related to technical issues and support.",
-                user=user
+                user=user,
             )
 
             faq_section3 = FAQSectionDB(
                 title="Synthetic Technical Support 3",
                 description="Synthetic questions related to technical issues and support.",
-                user=user
+                user=user,
             )
 
             session.add(faq_section1)
@@ -52,29 +56,28 @@ async def insert_synthetic_faqs_for_user(email: str):
                 question="What is a synthetic question?",
                 answer="A synthetic question is automatically generated for testing purposes.",
                 order=1,
-                section=faq_section1
-                
+                section=faq_section1,
             )
 
             faq_item2 = FAQItemDB(
                 question="How do I generate synthetic data?",
                 answer="Synthetic data can be generated using various tools and scripts.",
                 order=2,
-                section=faq_section1
+                section=faq_section1,
             )
 
             faq_item3 = FAQItemDB(
                 question="How do I contact synthetic support?",
                 answer="Synthetic support can be contacted via the synthetic support page.",
                 order=1,
-                section=faq_section2
+                section=faq_section2,
             )
 
             faq_item4 = FAQItemDB(
                 question="What is the purpose of synthetic FAQs?",
                 answer="Synthetic FAQs are used for testing and simulation.",
                 order=2,
-                section=faq_section2
+                section=faq_section2,
             )
 
             session.add_all([faq_item1, faq_item2, faq_item3, faq_item4])
@@ -83,6 +86,7 @@ async def insert_synthetic_faqs_for_user(email: str):
             print(f"Synthetic FAQs have been inserted for user: {email}")
         except ValueError as e:
             print(str(e))
+
 
 # Main entry point to run the script
 if __name__ == "__main__":

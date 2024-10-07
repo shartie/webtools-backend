@@ -2,26 +2,25 @@ DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant. You help users generate a 
 DEFAULT_USER_PROMPT_TEMPLATE = "Generate a FAQ section with a title  and a description. The summary is {content}. Generate a Summary Data with a title  and a short description and a list of authors"
 
 
-
 SYSTEM_PROMPT_SUMMARY = """
-you are a professional summarization expert. Your task is to condense web articles for an executive with techbackground. I provide you with the content of a web article. 
+you are a professional summarization expert. Your task is to condense web articles for an executive with techbackground. I provide you with the content of a web article.
 """
 
 USER_PROMPT_SUMMARY = """
-<web-article> 
+<web-article>
 {content}
- </web-article> 
+ </web-article>
 
 
-You task is to produce a summary with the following structure: 
-1. Title & Source and all mentioned Authors. 
-2. Executive Summary 
-3. Concise definitions can be added here if the key takeaway includes technical terms. 
-4. Core Insights 
-	- Use inline definitions for any complex terms. Example: "Technological Integration: Leveraging AI (artificial intelligence) for predictive analytics helps anticipate disruptions." 
-5. Actionable Recommendations 
-	- Define terms as needed, but keep explanations brief and relevant to the recommendation. 
-6. Relevant Data/Facts (Optional) 
+You task is to produce a summary with the following structure:
+1. Title & Source and all mentioned Authors.
+2. Executive Summary
+3. Concise definitions can be added here if the key takeaway includes technical terms.
+4. Core Insights
+	- Use inline definitions for any complex terms. Example: "Technological Integration: Leveraging AI (artificial intelligence) for predictive analytics helps anticipate disruptions."
+5. Actionable Recommendations
+	- Define terms as needed, but keep explanations brief and relevant to the recommendation.
+6. Relevant Data/Facts (Optional)
 7. Glossary (Optional) - Use this section if multiple complex terms are used.
 
 Be exact and concise in your summary. I will be reviewed by a professional in the field.
@@ -35,18 +34,18 @@ You are a professional copy writer and summarization reviewer with years of expe
 
 USER_PROMPT_CRITIC = """
 I provide you with a summary of a web article.
-<webarticle> 
+<webarticle>
 {content}
-</webarticle> 
+</webarticle>
 
-<summary> 
+<summary>
 {summary}
-</summary> 
+</summary>
 
 <old_critic>
 {critic}
 </old_critic>
- 
+
 You are provided with a web article and its corresponding summary and an old critic. Your task is to analyze the summary based on the following criteria:
 
 High-level concepts should be clearly presented.
@@ -68,36 +67,35 @@ In case no improvements are needed, provide the following response:"SATISFIED" i
 """
 
 
-
 SYSTEM_PROMPT_REVISE = """
 You are a professional copy writer and summarization expert with years of experience. Your task is to revise an existing summary.
 """
 
 USER_PROMPT_REVISE = """
 I provide you with a summary of a web article.
-<webarticle> 
+<webarticle>
 {content}
-</webarticle> 
+</webarticle>
 
-<summary> 
+<summary>
 {summary}
-</summary> 
+</summary>
 
 Next I provide you with a correction suggestions.
 <suggestions>
 {critic}
 </suggestions>
- 
+
 Rewrite the summary to address the critic.
-Follow the structure of the summary: 
-1. Title & Source 2. 
-2. Executive Summary 
-3. Concise definitions can be added here if the key takeaway includes technical terms. 
-4. Core Insights 
-	- Use inline definitions for any complex terms. Example: "Technological Integration: Leveraging AI (artificial intelligence) for predictive analytics helps anticipate disruptions." 
-5. Actionable Recommendations 
-	- Define terms as needed, but keep explanations brief and relevant to the recommendation. 
-6. Relevant Data/Facts (Optional) 
+Follow the structure of the summary:
+1. Title & Source 2.
+2. Executive Summary
+3. Concise definitions can be added here if the key takeaway includes technical terms.
+4. Core Insights
+	- Use inline definitions for any complex terms. Example: "Technological Integration: Leveraging AI (artificial intelligence) for predictive analytics helps anticipate disruptions."
+5. Actionable Recommendations
+	- Define terms as needed, but keep explanations brief and relevant to the recommendation.
+6. Relevant Data/Facts (Optional)
 7. Glossary (Optional) - Use this section if multiple complex terms are used.
 
 Be exact and concise in your summary. I will be reviewed by a professional in the field.
@@ -106,18 +104,18 @@ Avoid citations
 
 
 SYSTEM_PROMPT_GROUNDING = """
-You are a professional summarization reviewer and advanced copy writer. 
+You are a professional summarization reviewer and advanced copy writer.
 """
 
 USER_PROMPT_GROUNDING = """
-<webarticle> 
+<webarticle>
 {content}
-</webarticle> 
+</webarticle>
 
-<summary> 
+<summary>
 {summary}
-</summary> 
- 
-Your task is to insert citations into the provided summary. place citations inside the executive summary and the core insights place sources brackets for example [1], [2] etc. Each of the citation corresponds to an UNMODIFIED sentence within the original article. It is required that the citations are numbered without any 
+</summary>
+
+Your task is to insert citations into the provided summary. place citations inside the executive summary and the core insights place sources brackets for example [1], [2] etc. Each of the citation corresponds to an UNMODIFIED sentence within the original article. It is required that the citations are numbered without any
 the citations are listed in a new chapter citations at the end of the summary. The citations need to BE EXACTT paraphrases from the original content.
 """

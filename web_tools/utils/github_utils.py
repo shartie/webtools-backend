@@ -1,12 +1,10 @@
-
-
 import base64
-import os
 
-from typing import Union, Tuple    
+from typing import Union, Tuple
 
 from urllib.parse import urlparse
 from github import Github
+
 
 def parse_github_url(url: str) -> Tuple[str, str]:
     """
@@ -16,15 +14,16 @@ def parse_github_url(url: str) -> Tuple[str, str]:
     :return: A tuple containing the repository name and file path
     """
     parsed_url = urlparse(url)
-    path_parts = parsed_url.path.strip('/').split('/')
+    path_parts = parsed_url.path.strip("/").split("/")
 
     # The repository name is in the format 'owner/repo'
-    repo_name = '/'.join(path_parts[:2])
+    repo_name = "/".join(path_parts[:2])
 
     # The file path starts after 'blob/branch'
-    file_path = '/'.join(path_parts[4:])
+    file_path = "/".join(path_parts[4:])
 
     return repo_name, file_path
+
 
 def read_file_from_github(token, repo_name, file_path) -> Union[str, None]:
     """
@@ -46,12 +45,13 @@ def read_file_from_github(token, repo_name, file_path) -> Union[str, None]:
         file_content = repo.get_contents(file_path)
 
         # Decode the file content from base64
-        content = base64.b64decode(file_content.content).decode('utf-8')
+        content = base64.b64decode(file_content.content).decode("utf-8")
 
         return content
 
     except Exception as e:
         return str(e)
+
 
 # # Example usage
 # if __name__ == "__main__":

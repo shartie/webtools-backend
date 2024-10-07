@@ -16,7 +16,7 @@ services:
   # faq_generator_backend:
   #   restart: unless-stopped
   #   image: faq-generator-backend:v1
-    
+
   #   env_file:
   #     - .env_backend.docker
 

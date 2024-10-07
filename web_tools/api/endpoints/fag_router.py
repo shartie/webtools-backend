@@ -1,44 +1,21 @@
-
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, APIRouter,  HTTPException, status
-from starlette.middleware.cors import CORSMiddleware
-import uvicorn
+from fastapi import Depends, APIRouter, HTTPException, status
 
 # from hotnews.api.core.config import settings
-
-from sqlalchemy.future import select
-from alembic.config import Config
-from alembic import command
-
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-
-from web_tools.models import FAQSectionDB, FAQItemDB, UserDB
-from pydantic import BaseModel
-
 from uuid import UUID
-
-# from hotnews.db.models import AsyncSessionLocal
-# from hotnews.db.models import HotNewsItem
-
-# from hotnews.models import HotNewsItem as HotNewsItemModel
-# from hotnews.api.db import get_session
-
 from web_tools.api.deps import get_session
 
-from openai import OpenAI, AsyncOpenAI
+from openai import AsyncOpenAI
 from web_tools.faq.generation import AsyncFAQGenerator
 
-# Usage example
-import asyncio
-
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-
-# Assuming the necessary imports and models are available
 from web_tools.faq.repositories import UserRepository, FAQRepository
 from web_tools.faq.services import FAQSectionService
-from web_tools.faq.models import FAQSectionResponse, FAQItemResponse, CreateFromUrlRequest, UpdateFAQSectionRequest
+from web_tools.faq.models import (
+    FAQSectionResponse,
+    FAQItemResponse,
+    CreateFromUrlRequest,
+    UpdateFAQSectionRequest,
+)
 
 import os
 
@@ -50,15 +27,19 @@ import logging
 logger = logging.getLogger("faq_generator")
 router = APIRouter()
 
-def get_faq_service(session: AsyncSession = Depends(get_session)):
 
+def get_faq_service(session: AsyncSession = Depends(get_session)):
     user_repo = UserRepository(session)
     faq_repo = FAQRepository(session)
     return FAQSectionService(user_repo, faq_repo=faq_repo)
 
-@router.post("/users/{user_id}/faqs/create", response_model=FAQSectionResponse)
-async def generate_faq( user_id: str, request: CreateFromUrlRequest, session: AsyncSession = Depends(get_session)):
 
+@router.post("/users/{user_id}/faqs/create", response_model=FAQSectionResponse)
+async def generate_faq(
+    user_id: str,
+    request: CreateFromUrlRequest,
+    session: AsyncSession = Depends(get_session),
+):
     try:
         user_email = "alice@faq-generator.com"  # Example email
         # "https://github.com/assafelovic/gpt-researcher/blob/master/README.md"
@@ -66,7 +47,7 @@ async def generate_faq( user_id: str, request: CreateFromUrlRequest, session: As
         token = os.getenv("GITHUB_ACCESS_TOKEN")
         repo_name, file_name = parse_github_url(url=url)
         # Replace with the repository name in 'owner/repo' format
-        #file_content = read_file_from_github(token, "assafelovic/gpt-researcher", "README.md")
+        # file_content = read_file_from_github(token, "assafelovic/gpt-researcher", "README.md")
         file_content = read_file_from_github(token, repo_name, file_name)
         cleaned_file_content = clean_markdown_content(file_content)
 
@@ -77,7 +58,6 @@ async def generate_faq( user_id: str, request: CreateFromUrlRequest, session: As
 
         faq_generator = AsyncFAQGenerator(client)
         faq_section = await faq_generator.generate_faq_section(
-
             topic=cleaned_file_content
         )
 
@@ -86,7 +66,9 @@ async def generate_faq( user_id: str, request: CreateFromUrlRequest, session: As
 
         faq_service = FAQSectionService(user_repo, faq_repo=faq_repo)
 
-        inserted_faq_section = await faq_service.insert_faq_section( user_email, faq_section)
+        inserted_faq_section = await faq_service.insert_faq_section(
+            user_email, faq_section
+        )
         logger.info(f"Inserted FAQ Section ID: {inserted_faq_section.guid}")
 
         return FAQSectionResponse(
@@ -98,17 +80,17 @@ async def generate_faq( user_id: str, request: CreateFromUrlRequest, session: As
                     question=item.question,
                     answer=item.answer,
                     guid=item.guid,
-                    order=item.order
-                ) for item in inserted_faq_section.items
-            ]
+                    order=item.order,
+                )
+                for item in inserted_faq_section.items
+            ],
         )
-        
+
     except ValueError:
         # Log the error
         logger.error(f"Invalid UUID format for user {user_id}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid UUID format."
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid UUID format."
         )
 
     except HTTPException as http_exc:
@@ -122,29 +104,34 @@ async def generate_faq( user_id: str, request: CreateFromUrlRequest, session: As
         # Raise a 500 Internal Server Error for unexpected exceptions
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error."
+            detail="Internal server error.",
         )
 
-@router.get("/users/{user_id}/faqs", response_model=list[FAQSectionResponse])
-async def retrieve_faqs( user_id: str, faq_service: FAQSectionService = Depends(get_faq_service)):
 
+@router.get("/users/{user_id}/faqs", response_model=list[FAQSectionResponse])
+async def retrieve_faqs(
+    user_id: str, faq_service: FAQSectionService = Depends(get_faq_service)
+):
     fags = []
     try:
-        
         logger.info(f"Retrieving FAQ sections for user {user_id}")
         user_guid = UUID(user_id)
         logger.info("after uuid confversion")
         faq_sections = await faq_service.get_faq_sections(user_guid=user_guid)
-        
+
         if not faq_sections:
             logger.warning(f"FAQ sections not found for user {user_id}")
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="FAQ section not found."
+                status_code=status.HTTP_404_NOT_FOUND, detail="FAQ section not found."
             )
 
         for result in faq_sections:
-            faq_section = FAQSectionResponse(title=result.title, description=result.description, guid=result.guid, is_public=result.is_public)
+            faq_section = FAQSectionResponse(
+                title=result.title,
+                description=result.description,
+                guid=result.guid,
+                is_public=result.is_public,
+            )
             fags.append(faq_section)
 
         return fags
@@ -154,8 +141,7 @@ async def retrieve_faqs( user_id: str, faq_service: FAQSectionService = Depends(
         logger.error(f"Invalid UUID format for user {user_id}")
         logger.error(e, exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid UUID format."
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid UUID format."
         )
 
     except HTTPException as http_exc:
@@ -169,14 +155,13 @@ async def retrieve_faqs( user_id: str, faq_service: FAQSectionService = Depends(
         # Raise a 500 Internal Server Error for unexpected exceptions
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error."
+            detail="Internal server error.",
         )
+
 
 @router.get("/users/{user_id}/faqs/{faq_id}", response_model=FAQSectionResponse)
 async def retrieve_individual_faq(
-    user_id: str,
-    faq_id: str,
-    faq_service: FAQSectionService = Depends(get_faq_service)
+    user_id: str, faq_id: str, faq_service: FAQSectionService = Depends(get_faq_service)
 ):
     try:
         # Log the incoming request
@@ -187,18 +172,21 @@ async def retrieve_individual_faq(
         faq_guid = UUID(faq_id)
 
         # Attempt to retrieve the FAQ section
-        faq_section = await faq_service.get_faq_section(user_guid=user_guid, faq_guid=faq_guid)
+        faq_section = await faq_service.get_faq_section(
+            user_guid=user_guid, faq_guid=faq_guid
+        )
 
         # If the FAQ section is not found, log and raise a 404 Not Found exception
         if not faq_section:
             logger.warning(f"FAQ section not found for user {user_id} and FAQ {faq_id}")
             raise HTTPException(
-                status_code=status.HTTP_405_NOT_FOUND,
-                detail="FAQ section not found."
+                status_code=status.HTTP_405_NOT_FOUND, detail="FAQ section not found."
             )
 
         # Log successful retrieval
-        logger.info(f"Successfully retrieved FAQ section for user {user_id} and FAQ {faq_id}")
+        logger.info(
+            f"Successfully retrieved FAQ section for user {user_id} and FAQ {faq_id}"
+        )
 
         # Create and return the response model
         return FAQSectionResponse(
@@ -211,17 +199,17 @@ async def retrieve_individual_faq(
                     question=item.question,
                     answer=item.answer,
                     guid=item.guid,
-                    order=item.order
-                ) for item in faq_section.items
-            ]
+                    order=item.order,
+                )
+                for item in faq_section.items
+            ],
         )
 
     except ValueError:
         # Log the error
         logger.error(f"Invalid UUID format for user {user_id} or FAQ {faq_id}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid UUID format."
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid UUID format."
         )
 
     except HTTPException as http_exc:
@@ -235,19 +223,19 @@ async def retrieve_individual_faq(
         # Raise a 500 Internal Server Error for unexpected exceptions
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error."
+            detail="Internal server error.",
         )
-    
+
+
 @router.get("/shared/{faq_id}", response_model=FAQSectionResponse)
 async def retrieve_shared_faq(
-    faq_id: str,
-    faq_service: FAQSectionService = Depends(get_faq_service)
+    faq_id: str, faq_service: FAQSectionService = Depends(get_faq_service)
 ):
     try:
         # Log the incoming request
         logger.info(f"Retrieving shared FAQ section and FAQ {faq_id}")
 
-        # Convert user_id and faq_id 
+        # Convert user_id and faq_id
         faq_guid = UUID(faq_id)
 
         # Attempt to retrieve the FAQ section
@@ -255,17 +243,15 @@ async def retrieve_shared_faq(
 
         # If the FAQ section is not found, log and raise a 404 Not Found exception
         if not faq_section:
-            logger.warning(f"FAQ section not found for user {user_id} and FAQ {faq_id}")
+            logger.warning(f"FAQ section not found for FAQ {faq_id}")
             raise HTTPException(
-                status_code=status.HTTP_405_NOT_FOUND,
-                detail="FAQ section not found."
+                status_code=status.HTTP_405_NOT_FOUND, detail="FAQ section not found."
             )
-        
-        if faq_section.is_public == False:
-            logger.warning(f"FAQ section not found for user {user_id} and FAQ {faq_id}")
+
+        if not faq_section.is_public:
+            logger.warning(f"FAQ section not found for and FAQ {faq_id}")
             raise HTTPException(
-                status_code=status.HTTP_405_NOT_FOUND,
-                detail="FAQ section not found."
+                status_code=status.HTTP_405_NOT_FOUND, detail="FAQ section not found."
             )
 
         # Log successful retrieval
@@ -282,18 +268,18 @@ async def retrieve_shared_faq(
                     question=item.question,
                     answer=item.answer,
                     guid=item.guid,
-                    order=item.order
-                ) for item in faq_section.items
-            ]
+                    order=item.order,
+                )
+                for item in faq_section.items
+            ],
         )
 
-    except ValueError:
+    except ValueError as e:
         # Log the error
         logger.error(f"Invalid UUID format for or FAQ {faq_id}")
         logger.error(e, exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid UUID format."
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid UUID format."
         )
 
     except HTTPException as http_exc:
@@ -307,38 +293,42 @@ async def retrieve_shared_faq(
         # Raise a 500 Internal Server Error for unexpected exceptions
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error."
+            detail="Internal server error.",
         )
-    
+
+
 @router.put("/users/{user_id}/faqs/{faq_id}", response_model=FAQSectionResponse)
 async def update_individual_faq(
     user_id: str,
     faq_id: str,
     update_request: UpdateFAQSectionRequest,
-    faq_service: FAQSectionService = Depends(get_faq_service)
+    faq_service: FAQSectionService = Depends(get_faq_service),
 ):
     try:
         # Log the incoming request
         logger.info(f"Update FAQ section for user {user_id} and FAQ {faq_id}")
 
         # Convert user_id and faq_id to UUID
-        user_guid = UUID(user_id)
+        # user_guid = UUID(user_id)
         faq_guid = UUID(faq_id)
 
         # Attempt to retrieve the FAQ section
-        faq_section = await faq_service.update_faq_section_visibility(section_guid=faq_guid, visibility=update_request.visibility)
+        faq_section = await faq_service.update_faq_section_visibility(
+            section_guid=faq_guid, visibility=update_request.visibility
+        )
         # faq_section = await faq_service.get_faq_section(user_guid=user_guid, faq_guid=faq_guid)
 
         # If the FAQ section is not found, log and raise a 404 Not Found exception
         if not faq_section:
             logger.warning(f"FAQ section not found for user {user_id} and FAQ {faq_id}")
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="FAQ section not found."
+                status_code=status.HTTP_404_NOT_FOUND, detail="FAQ section not found."
             )
 
         # Log successful retrieval
-        logger.info(f"Successfully retrieved FAQ section for user {user_id} and FAQ {faq_id}")
+        logger.info(
+            f"Successfully retrieved FAQ section for user {user_id} and FAQ {faq_id}"
+        )
 
         # Create and return the response model
         return FAQSectionResponse(
@@ -351,17 +341,17 @@ async def update_individual_faq(
                     question=item.question,
                     answer=item.answer,
                     guid=item.guid,
-                    order=item.order
-                ) for item in faq_section.items
-            ]
+                    order=item.order,
+                )
+                for item in faq_section.items
+            ],
         )
 
     except ValueError:
         # Log the error
         logger.error(f"Invalid UUID format for user {user_id} or FAQ {faq_id}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid UUID format."
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid UUID format."
         )
 
     except HTTPException as http_exc:
@@ -375,15 +365,13 @@ async def update_individual_faq(
         # Raise a 500 Internal Server Error for unexpected exceptions
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error."
+            detail="Internal server error.",
         )
 
-    
+
 @router.delete("/users/{user_id}/faqs/{faq_id}")
 async def delete_individual_faq(
-    user_id: str,
-    faq_id: str,
-    faq_service: FAQSectionService = Depends(get_faq_service)
+    user_id: str, faq_id: str, faq_service: FAQSectionService = Depends(get_faq_service)
 ):
     try:
         # Log the incoming request
@@ -397,9 +385,11 @@ async def delete_individual_faq(
         await faq_service.delete_faq_section(user_guid=user_guid, faq_guid=faq_guid)
 
         # If the FAQ section is not found, log and raise a 404 Not Found exception
-        
+
         # Log successful retrieval
-        logger.info(f"Successfully retrieved FAQ section for user {user_id} and FAQ {faq_id}")
+        logger.info(
+            f"Successfully retrieved FAQ section for user {user_id} and FAQ {faq_id}"
+        )
 
         # Create and return the response model
         return True
@@ -407,8 +397,7 @@ async def delete_individual_faq(
         # Log the error
         logger.error(f"Invalid UUID format for user {user_id} or FAQ {faq_id}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid UUID format."
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid UUID format."
         )
 
     except HTTPException as http_exc:
@@ -422,5 +411,5 @@ async def delete_individual_faq(
         # Raise a 500 Internal Server Error for unexpected exceptions
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error."
+            detail="Internal server error.",
         )

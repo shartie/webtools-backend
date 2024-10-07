@@ -28,7 +28,9 @@ def new_async_engine(uri: URL) -> AsyncEngine:
     )
 
 
-_ASYNC_ENGINE = new_async_engine(get_settings().sqlalchemy_database_uri.render_as_string(hide_password=False))
+_ASYNC_ENGINE = new_async_engine(
+    get_settings().sqlalchemy_database_uri.render_as_string(hide_password=False)
+)
 _ASYNC_SESSIONMAKER = async_sessionmaker(_ASYNC_ENGINE, expire_on_commit=False)
 
 

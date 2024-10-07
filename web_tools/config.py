@@ -17,7 +17,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import AnyHttpUrl, BaseModel, SecretStr, computed_field
+from pydantic import BaseModel, SecretStr, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine.url import URL
 
@@ -55,15 +55,14 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         # env_file=f"{PROJECT_DIR}/.env_backend",
-        
         case_sensitive=False,
         env_nested_delimiter="__",
-        env_prefix="FAQ_"
+        env_prefix="FAQ_",
     )
 
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    settings = Settings() 
+    settings = Settings()
     print(settings)
     return settings  # type: ignore

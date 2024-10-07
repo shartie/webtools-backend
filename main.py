@@ -1,13 +1,10 @@
-import sys
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-
 from alembic.config import Config
 from alembic import command
 
-from web_tools.config import get_settings
 
 import asyncio
 
@@ -76,43 +73,45 @@ import uvicorn
 # }
 
 LOGGING_CONFIG = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "default": {
-                "()": "uvicorn.logging.DefaultFormatter",
-                "fmt": "%(levelprefix)s %(asctime)s - %(name)s - %(levelname)s - %(message)s",
-                "use_colors": None,
-            },
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "()": "uvicorn.logging.DefaultFormatter",
+            "fmt": "%(levelprefix)s %(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            "use_colors": None,
         },
-        "handlers": {
-            "file": {
-                "class": "logging.FileHandler",
-                "filename": "app.log",
-                "formatter": "default",
-            },
-            "console": {
-                "class": "logging.StreamHandler",
-                "formatter": "default",
-            },
+    },
+    "handlers": {
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": "app.log",
+            "formatter": "default",
         },
-        "root": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "default",
+        },
+    },
+    "root": {
+        "level": "INFO",
+        "handlers": ["file", "console"],
+    },
+    "loggers": {
+        "faq_generator": {
             "level": "INFO",
             "handlers": ["file", "console"],
+            "propagate": False,
         },
-        "loggers": {
-            "faq_generator": {
-                "level": "INFO",
-                "handlers": ["file", "console"],
-                "propagate": False,
-            },
-        },
-    }
+    },
+}
 
 # Apply the logging configuration
 
 
 logger = logging.getLogger("faq_generator")
+
+
 async def apply_migrations():
     alembic_cfg = Config("alembic.ini")
     await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
@@ -123,7 +122,6 @@ async def lifespan(app: FastAPI):
     # Load the ML model
     logger.info("Loading the ML model")
     try:
-        settings = get_settings()
         await apply_migrations()
         print("Migrations applied")
         logging.config.dictConfig(LOGGING_CONFIG)
@@ -142,6 +140,7 @@ async def lifespan(app: FastAPI):
     # logger.info('API is starting up')
     yield
     # Clean up the ML models and release the resources
+
 
 api_router = APIRouter()
 
@@ -163,16 +162,18 @@ app.add_middleware(
 )
 
 
-app.include_router(api_router, prefix= "/api")
+app.include_router(api_router, prefix="/api")
 
 
 # Define an endpoint that returns a list of strings
 @app.post("/items")
 def get_items():
     logger.info("Handling /items POST request")
-    return { "faq" : [["apple", "apple 1"]] }
+    return {"faq": [["apple", "apple 1"]]}
+
 
 # Run the app using Uvicorn
 if __name__ == "__main__":
-    
-    uvicorn.run(app, host="0.0.0.0", port=8080,log_config=LOGGING_CONFIG, log_level="info")
+    uvicorn.run(
+        app, host="0.0.0.0", port=8080, log_config=LOGGING_CONFIG, log_level="info"
+    )

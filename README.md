@@ -1,4 +1,28 @@
 
+```yaml
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v2.3.0
+  hooks:
+  -   id: check-yaml
+  -   id: end-of-file-fixer
+  -   id: trailing-whitespace
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.6.9
+  hooks:
+    # Run the linter.
+    - id: ruff
+    # Run the formatter.
+    - id: ruff-format
+```
+
+```bash
+# add pre-commit to deps
+poetry run pre-commit install
+poetry run pre-commit run   --all-files
+```
+
 ```bash
 python main.py
 ```
